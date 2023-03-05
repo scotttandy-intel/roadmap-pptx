@@ -364,6 +364,9 @@ def dump_line_format( line_format, depth=0):
    
     dump_pptx_object(line_format, serialize, depth=depth)
 
+if __name__ == '__main__':
+    
+
     
 
 
