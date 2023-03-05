@@ -412,6 +412,16 @@ class ConceptSiProduct:
 
         return
     
+    def _just_this_type(self, d, t):
+        """
+        Helper function to creat a subset dict with just this type of items
+        """
+        just_t = OrderedDict()
+        for key, value in d.items():
+            if isinstance(value, t):
+                just_t[key] = value
+        return just_t
+
     def _build_row_dictionary(self, my_row):
         """
         Looks at each cell in the row and figures out if it is a work week, relative work week
@@ -423,6 +433,23 @@ class ConceptSiProduct:
 
             if pd.isnull(col_text):
                 continue
+            try:
+                annotation = an.cell_text_to_annotation(my_col=col_name, text=col_text)
+            except:
+                annotation = None
+            
+            if annotation is not None and an.is_annotation_class(annotation):
+                my_row_dict[col_name] = annotation
+                continue
+            
+            ### This is a bit of a hack - and not taking full advantage of all
+            ### the fields provide by the annotation class
+            ### will need to re-write to put the annotation class object
+            ### into the dict instead of just converting it to the equivalent of
+            ### Text entered into a particular column
+            if annotation is not None and an.is_milestone_class(annotation):
+                col_name = annotation.name
+                col_text = annotation.ww_text
 
             try:
                 delta_wws = iw.delta_string_to_wws(col_text)
@@ -430,11 +457,14 @@ class ConceptSiProduct:
                 delta_wws = None
 
             if delta_wws != None:
-                current_index = len(my_row_dict.keys())
+                just_ms = self._just_this_type(d=my_row_dict, t=iw.WW )
+                current_index = len(just_ms.keys())
+
                 if current_index == 0:
                     raise ValueError(\
                         'Cannot have relative milestone with no previous set milestone '+col_name+' - ' + col_text )
-                previous_milestone =my_row_dict[list(my_row_dict.keys())[current_index-1]]
+                
+                previous_milestone =my_row_dict[list(just_ms.keys())[current_index-1]]
                 
                 my_row_dict[col_name] = previous_milestone.add_wws(delta_wws)
                 continue
@@ -443,15 +473,8 @@ class ConceptSiProduct:
 
             if ww is not None:        
                 my_row_dict[col_name] = ww
-                continue
-
-            try:
-                annotation = an.cell_text_to_annotation(my_col=col_name, text=col_text)
-            except ValueError as e:
-                print(e)
-                continue
-            
-            my_row_dict[col_name] = annotation
+            else:
+                print(f'cell_text={col_text} - not date or milestone/annotation')
 
         return my_row_dict
 

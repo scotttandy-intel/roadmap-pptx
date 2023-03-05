@@ -40,6 +40,10 @@ def build_valid_string_many_ways_wws(ww, year):
     ww_strings.append( (f"  Ww{ww:02}'{year:02}  ", ww, year) )
     ww_strings.append( (f'Ww{ww:02}"{year:02}  ', ww, year) )
     ww_strings.append( (f'Ww{ww:02} : {year:02}  ', ww, year) )
+    ww_strings.append( (f'{year}ww{ww:02}  ', ww, year) )
+    ww_strings.append( (f'{year}WW{ww:02}  ', ww, year) )
+    ww_strings.append( (f'{iw.WW_YEAR_REAL_WORLD_YEAR+year:04}ww{ww:02}  ', ww, year) )
+    ww_strings.append( (f'{iw.WW_YEAR_REAL_WORLD_YEAR+year:04}WW{ww:02}  ', ww, year) )
     return ww_strings
     
 def test_construct_all_wws():

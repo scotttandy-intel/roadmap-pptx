@@ -125,6 +125,8 @@ def render_roadmap_concept( roadmap_slide, roadmap_configuration, roadmap_table,
                     name=row[product_name_col_in_df], my_row=row, roadmap_configuration=roadmap_configuration,\
                      from_roadmap_top_cm=y_offset + (row_count * PROG_PROG_VERT_DISTANCE_CM),\
                         missing_ms=NOT_PROVIDED)
+                
+                print('+++++', [str(m) for m in pi.milestones])
                 print('-----', pi.annotations())
                 
                 ### Note - the render program function actually updates each of the
@@ -137,48 +139,6 @@ def render_roadmap_concept( roadmap_slide, roadmap_configuration, roadmap_table,
         
     return shorthand_name_dict
 
-"""
-def render_annotations( shorthand_name_dict, roadmap_slide, roadmap_canvas, roadmap_table,\
-    align_zero=False ):
-    if roadmap_table.annotations_list() is not None:
-        for annoation in roadmap_table.annotations_list():
-            if annoation[rt.TYPE] == rt.ANNOTTION_SLIP:
-                try:
-                    start_pi = shorthand_name_dict[annoation[rt.SLIP_START_SHORT_NAME]]
-                except:
-                    print("Annotate: Cannot find:", annoation[rt.SLIP_START_SHORT_NAME] )
-                    continue
-                try:
-                    start_ms = start_pi.milestone_by_name(milestone_name=annoation[rt.SLIP_START_MILESTONE])
-                except:
-                    print("Annotate: Cannot find:", annoation[rt.SLIP_START_MILESTONE] )
-                    continue
-                try:
-                    end_pi = shorthand_name_dict[annoation[rt.SLIP_END_SHORT_NAME]]
-                except:
-                    print("Annotate: Cannot find:", annoation[rt.SLIP_END_SHORT_NAME] )
-                    continue
-                try:
-                    end_ms = end_pi.milestone_by_name(milestone_name=annoation[rt.SLIP_END_MILESTONE])
-                except:
-                    print("Annotate: Cannot find:", annoation[rt.SLIP_END_MILESTONE] )
-                    continue
-                
-                print(start_pi, start_ms, end_pi, end_ms)
-
-                roadmap_slide.annotate_slip(start_pi=start_pi, start_ms=start_ms, end_pi=end_pi,\
-                    end_ms=end_ms, align_zero=align_zero)
-            
-            if annoation[rt.TYPE] == rt.ANNOTATION_INLINEWWS:
-                for shorthand_name, program_information in shorthand_name_dict.items():
-                    roadmap_slide.annotate_inline(pi=program_information)
-        
-    for shorthand_name, program_information in shorthand_name_dict.items():
-            roadmap_slide.annotate_backend(pi=program_information,a0_ti_text='A0TI', prq_text='PRQ')
-
-    return
-            
-"""
 def render_annotations( shorthand_name_dict, roadmap_slide, roadmap_canvas, align_zero=False ):
     for key1, major in shorthand_name_dict.items():
         for key2, minor in major.items():
@@ -186,6 +146,7 @@ def render_annotations( shorthand_name_dict, roadmap_slide, roadmap_canvas, alig
                 print('>>>>>>>>', key3, pi.annotations())
                 roadmap_slide.render_annotations(pi=pi, all_pis_dict=shorthand_name_dict)
     
+
 def render_roadmap_from_paths(golden_doc_path, roadmap_helper_path, roadmap_config_path, \
     roadmap_template_path, start_ww, end_ww, roadmap_title=None, \
         roadmap_top_cm=1.5, roadmap_height_cm=16.5, input_slide_index=0, \

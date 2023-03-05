@@ -17,15 +17,15 @@ DOUBLE_QUOTE = '"'
 TRUE = 'True'
 FALSE = 'False'
 ### Annoation Types
-TYPE = 'type'          # Key
-TYPE_TEXT = 'text'     # Value for Text annotation
+TYPE = 'ty'          # Key
+TYPE_TEXT = 't'     # Value for Text annotation
 TYPE_DELTA = 'delta'   # Value for Delta annotation
 
 ### General Keys
-TEXT = 'text'
-START = 'start'
-END = 'end'
-AFTER_TEXT = 'after'
+TEXT = 't'
+START = 's'
+END = 'e'
+AFTER_TEXT = 'at'
 
 
 ### TextFormat related constants
@@ -39,6 +39,17 @@ FONT_RGB = 'font_rgb'
 FONT_BOLD = 'font_bold'
 FONT_ITALIC = 'font_italic'
 FONT_UNDERLINE = 'font_underline'
+
+### Milestone related Constants
+TYPE_MILESTONE = 'ms'
+NAME='n'
+WW_TEXT = 'ww'
+MAJOR = 'ma'
+MINOR = 'mi'
+START_MAJOR = 'sma'
+START_MINOR = 'smi'
+END_MAJOR = 'ema'
+END_MINOR = 'emi'
 
 ### Delta related constants
 TYPE_PHASE = 'phase'
@@ -103,7 +114,11 @@ def an_key_in_dict(k, d):
 def an_value_for_key(k, d):
     return d[an_key_in_dict(k=k, d=d)]
 
-
+def is_milestone_class( obj ): 
+    if isinstance(obj, Milestone):
+        return True
+    
+    return False
 def is_annotation_class( obj ):
     if isinstance(obj, Text):
         return True
@@ -234,25 +249,61 @@ def dict_to_TextFormat(d):
         font_bold=font_bold, font_italic=font_italic, font_underline=font_underline)
 
 class Text:
-    def __init__(self, my_col, text, text_format=None):
+    def __init__(self, my_col, text, milestone, text_format=None):
         self.my_col = my_col
         self.text = text
+        self.milestone=milestone
         self.text_format = text_format
     
     def to_text(self):
         return self.text
 
 
-def text_to_Text(my_col, j):
-   
-    text_format = dict_to_TextFormat(d=j)
-
+def json_to_Text(my_col, j):
     try:
-        text = an_value_for_key(k=TYPE_TEXT, d=j)
+        text = an_value_for_key(k=TYPE_TEXT, d=j).strip()
     except:
         raise ValueError(TEXT+" key not found")
 
-    return Text(my_col=my_col, text=text, text_format=text_format)
+    try:
+        milestone = an_value_for_key(k=MILESTONE, d=j).strip()
+    except:
+        milestone = None
+    
+    if milestone is None:
+        try:
+            milestone = an_value_for_key(k=START, d=j).strip()
+        except:
+            raise ValueError('Text annotaiton must supply a target milestone with keys: '+MILESTONE+' or '+START)
+
+    text_format = dict_to_TextFormat(d=j)
+
+    return Text(my_col=my_col, text=text, milestone=milestone, text_format=text_format)
+
+class Milestone:
+    def __init__(self, my_col, name, ww_text, text_format ):
+        self.my_col = my_col
+        self.name = name
+        self.ww_text = ww_text
+        self.text_format = text_format
+
+def json_to_Milestone(my_col, j):
+    try:
+         name = an_value_for_key(k=NAME,d=j).strip()
+    except:
+        print("ERROR: Must provide 'name' tag for Milestone Annotation")
+        raise ValueError("ERROR: Must provide " + NAME + " tag for Milestone Annotation")
+
+    try:
+        ww_text = an_value_for_key(k=WW_TEXT,d=j)
+    except:
+        print("ERROR: Must provide " + WW_TEXT+ "  tag for Milestone Annotation")
+        raise ValueError("ERROR: Must provide " + WW_TEXT+ "  tag for Milestone Annotation")
+    
+    text_format = dict_to_TextFormat(d=j)
+
+    return Milestone(my_col=my_col, name=name, ww_text=ww_text, text_format=text_format)
+
 
 class Delta:
     def __init__(self, my_col, text, start, end, date_format, after_text, text_format  ):
@@ -268,21 +319,21 @@ class Delta:
         return self.text
 
 
-def text_to_Delta(my_col, j):
+def json_to_Delta(my_col, j):
     try:
         text = an_value_for_key(k=TEXT,d=j)
     except:
         text = ''
 
     try:
-        start = an_value_for_key(k=START,d=j)
+        start = an_value_for_key(k=START,d=j).strip()
     except:
-        start = None
+        raise ValueError("Must provide "+ START + "Key")
     
     try:
-        end = an_value_for_key(k=END, d=j)
+        end = an_value_for_key(k=END, d=j).strip()
     except:
-        end = None
+        raise ValueError("Must provide "+ END + "Key")
     
     try:
         date_format = an_value_for_key(k=DATE_FORMAT, d=j)
@@ -305,8 +356,8 @@ def cell_text_to_annotation( my_col, text ):
     except:
         raise ValueError('Error converting to JSON: ' + text)
     
-    if isinstance(j, str):
-        return Text(my_col=my_col, text=j)
+    if not isinstance(j, dict):
+        return ValueError("Cell must be JSON dictionary")
     
     try:
         t = an_value_for_key(k=TYPE, d=j)
@@ -316,10 +367,15 @@ def cell_text_to_annotation( my_col, text ):
     t = t.lower()
 
     if t == TYPE_TEXT.lower():
-        return text_to_Text(my_col=my_col, j=j)
+        return json_to_Text(my_col=my_col, j=j)
     
     if t == TYPE_DELTA.lower():
-        return text_to_Delta(my_col=my_col, j=j)
+        return json_to_Delta(my_col=my_col, j=j)
+    
+    if t == TYPE_MILESTONE.lower():
+        return json_to_Milestone(my_col=my_col, j=j)
+    
+    print("Found JSON: but did not match: ", my_col, text)
 
     raise ValueError('Valid JSON -> No Valid Annotation: ' + text)
 

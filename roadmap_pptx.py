@@ -314,9 +314,10 @@ class ConceptProgramInformation:
     
     def milestone_by_text(self, milestone_name):
         for ms in self.milestones:
-            if ms.text == milestone_name:
+            if ms.text.strip() == milestone_name.strip():
                 return ms
-        return None
+        
+        raise ValueError("milestone name not found in milestone list:"+milestone_name)
 
     def annotations(self):
         return self.si_program.annotations()
@@ -533,7 +534,10 @@ class RoadmapCanvas:
         qts_each_year = [self.grid.quarters_in_first_year()]
 
         if not align_zero:
-            year_text = [f"20{self.grid.start_year:02d}"]
+            if self.grid.start_year < 10:
+                year_text = [f"{self.grid.start_year:02d}"]
+            else:
+                year_text = [f"20{self.grid.start_year:02d}"]
         else:
             year_text = [f"{self.grid.start_year:02d}"] 
 
@@ -981,20 +985,13 @@ class RoadmapSlide:
             
             if isinstance(ann, an.Delta):
                 self._render_an_Delta(pi=pi, ann=ann, all_pis_dict=all_pis_dict)
-
-
+    
     def _render_an_Text(self, pi, ann, all_pis_dict ):
-        milestone_before = pi.milestone_before(col_name=ann.my_col)
-        try:
-            milestone_after = pi.milestone_after(col_name=ann.my_col)
-        except:
-            milestone_after = None
-
         shape_text = ann.text
-        if milestone_after is not None:
-            left_offset_cm , right_edge_cm = milestone_before.between_two_milestones(milestone_after)
-        else:
-            left_offset_cm  = milestone_before.right_of_marker_and_text()
+
+        milestone_before = pi.milestone_by_text(ann.milestone)
+        
+        left_offset_cm  = milestone_before.right_of_marker_and_text()
 
         width_cm = 1.0
 
@@ -1009,8 +1006,16 @@ class RoadmapSlide:
                 font_name='Intel Clear', font_size = Pt(8), font_rgb_color=RGBColor(0,0,0), font_bold=True)
     
     def _render_an_Delta(self, pi, ann, all_pis_dict ):
-        milestone_before = pi.milestone_before(col_name=ann.my_col)
-        milestone_after = pi.milestone_after(col_name=ann.my_col)
+        try:
+            milestone_before = pi.milestone_by_text(ann.start)
+        except:
+            print(f"Error rendering Delta{ann.text} milestone{ann.start} not found")
+            return
+        try:
+            milestone_after = pi.milestone_by_text(ann.end)
+        except:
+            print(f"Error rendering Delta '{ann.text}' milestone:{ann.end} not found")
+            return
         
         #print(ann.my_col, milestone_before.text, milestone_before.ww_date, milestone_after.text, milestone_after.ww_date)
         
@@ -1028,19 +1033,17 @@ class RoadmapSlide:
 
         shape_text = ann.text + date_text + ann.after_text
         
-        left_edge_cm, right_edge_cm = milestone_before.between_two_milestones(milestone_after)
+        left_edge_cm = milestone_before.right_of_marker_and_text() + SM_CM
         
         width_cm = 1.0
         
-        left_offset_cm = left_edge_cm
-        
         vertical_offset_cm = pi.from_roadmap_top_cm + ADD_TO_CENTER_MILESTONE_IN_PRODUCT_SHAPE*0.5
         
-        add_text_box(shapes=self.slide.shapes, left_cm=left_offset_cm,\
+        add_text_box(shapes=self.slide.shapes, left_cm=left_edge_cm,\
                  top_cm=vertical_offset_cm, width_cm = width_cm, height_cm=PRODUCT_MILESTONE_SHAPE_HEIGHT_CM,\
-                text = shape_text, text_align=PP_ALIGN.CENTER, text_auto_size=MSO_AUTO_SIZE.NONE,\
+                text = shape_text, text_align=PP_ALIGN.LEFT, text_auto_size=MSO_AUTO_SIZE.NONE,\
                 fill_rgb=None, line_rgb = None, line_width= Pt(1.0), line_dash = None,\
-                font_name='Intel Clear', font_size = Pt(9), font_rgb_color=RGBColor(0,0,0), font_bold=True )
+                font_name='Intel Clear', font_size = Pt(9), font_rgb_color=RGBColor(0,0,128), font_bold=True )
 
 
     def annotate_slip(self, start_pi, start_ms, end_pi, end_ms, align_zero=False ):
